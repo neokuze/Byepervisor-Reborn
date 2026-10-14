@@ -1,0 +1,41 @@
+name: Build Byepervisor Reborn
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld llvm xxd wget unzip make
+
+      - name: Setup ps5-payload-sdk
+        run: |
+          wget https://github.com/ps5-payload-dev/sdk/releases/latest/download/ps5-payload-sdk.zip
+          sudo unzip -d /opt ps5-payload-sdk.zip
+
+      - name: Compile Byepervisor Reborn
+        run: |
+          export PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk
+          make
+
+      - name: Upload compiled ELF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: byepervisor_reborn
+          path: byepervisor_reborn.elf
+          if-no-files-found: error
